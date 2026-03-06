@@ -36,11 +36,17 @@ def my_collate_fn(batch):
     paths = []
     
     resize = transforms.Resize((224, 224))
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     
     for item in batch:
         # Image
-        img = item['image'] # Tensor
+        img = item['image'] # Tensor (C, H, W) range 0-255
+        
+        # Normalize to 0-1 and then apply standardization
+        img = img / 255.0 
         img = resize(img)
+        img = normalize(img)
+        
         images.append(img)
         
         # Point Cloud
@@ -105,9 +111,28 @@ def train():
     val_size = total_len - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
     
-    # num_workers=0 is safer on Windows
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=my_collate_fn, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=my_collate_fn, num_workers=0)
+    # Determine number of workers based on OS
+    # Use more workers on Linux (e.g. 8) to speed up data loading (heavy point cloud processing)
+    # On Windows, keep it low (0) to avoid multiprocessing spawn issues
+    num_workers = 8 if os.name == 'posix' else 0 
+    
+    # num_workers=0 is safer on Windows, but use more on Linux
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=True, 
+        collate_fn=my_collate_fn, 
+        num_workers=num_workers,
+        pin_memory=True
+    )
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        collate_fn=my_collate_fn, 
+        num_workers=num_workers,
+        pin_memory=True
+    )
     
     print(f"Train samples: {len(train_dataset)}, Val samples: {len(val_dataset)}")
 
