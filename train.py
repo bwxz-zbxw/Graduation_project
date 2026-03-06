@@ -10,7 +10,7 @@ from src.data.sunrgbd_dataset import SUNRGBDDataset
 from src.models.model import SceneUnderstandingModel
 
 # --- Configuration ---
-BATCH_SIZE = 8
+BATCH_SIZE = 32 # Increased from 8 to saturate GPU
 LEARNING_RATE = 1e-4
 NUM_EPOCHS = 10
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

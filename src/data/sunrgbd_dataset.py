@@ -82,9 +82,15 @@ class SUNRGBDDataset(Dataset):
         # We need intrinsics K and extrinsics
         K = sample.K # 3x3 Intrinsic matrix
         
+        # Optimization: Downsample depth map before back-projection
+        # This significantly reduces the number of points to process (CPU intensive part)
+        # Stride of 4 reduces points by 16x (e.g. 300k -> 19k), still enough to sample 2048
+        stride = 4
+        depth = depth[::stride, ::stride]
+        
         # Create meshgrid for pixel coordinates
         rows, cols = depth.shape
-        c, r = np.meshgrid(np.arange(cols), np.arange(rows))
+        c, r = np.meshgrid(np.arange(0, cols*stride, stride), np.arange(0, rows*stride, stride))
         
         # Back-project to 3D
         # z = depth
