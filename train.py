@@ -74,8 +74,11 @@ def validate(model, loader, criterion, class_to_idx, device):
     total_loss = 0
     encoded_encoder = lambda batch: encode_batch_labels(batch, class_to_idx)
     
+    # Use tqdm for progress tracking during validation
+    loop = tqdm(loader, total=len(loader), desc="Validating", leave=False)
+    
     with torch.no_grad():
-        for data in loader:
+        for data in loop:
             img = data['image'].to(device)
             pc = data['point_cloud'].to(device)
             targets = encoded_encoder(data['labels']).to(device)
@@ -83,6 +86,10 @@ def validate(model, loader, criterion, class_to_idx, device):
             outputs = model(img, pc)
             loss = criterion(outputs, targets)
             total_loss += loss.item()
+            
+            # Optional: update postfix with current batch loss, though average is what matters
+            loop.set_postfix(val_loss=loss.item())
+            
     return total_loss / len(loader)
 
 def encode_batch_labels(label_list_batch, class_to_idx):
