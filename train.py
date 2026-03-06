@@ -14,7 +14,8 @@ BATCH_SIZE = 8
 LEARNING_RATE = 1e-4
 NUM_EPOCHS = 10
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-ROOT_DIR = r'C:\Users\ASUS\Desktop\Graduation_project'
+# Use current directory as root, don't hardcode full path
+ROOT_DIR = os.getcwd() 
 
 # --- Transforms ---
 # Simple transform for images: Resize to 224x224 and Normalize
