@@ -1,0 +1,18 @@
+# Data
+SUNRGBD/
+SUNRGBDtoolbox/
+文献/
+*.zip
+*.tar.gz
+*.rar
+
+# Models & Checkpoints
+*.pth
+*.pt
+checkpoints/
+__pycache__/
+
+# System & IDE
+.vscode/
+.idea/
+*.log
