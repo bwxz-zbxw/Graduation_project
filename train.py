@@ -227,7 +227,9 @@ def train():
             pos = image_counts[cls]
             if pos == 0: pos = 1 # Avoid div by zero
             neg = total_len - pos
-            weight = neg / pos
+            # Use Square Root to dampen extreme weights (e.g. 1000 -> 31)
+            # This prevents the model from hallucinating rare classes everywhere
+            weight = (neg / pos) ** 0.5 
             pos_weights.append(weight)
             
         pos_weight = torch.tensor(pos_weights).float().to(DEVICE)
