@@ -14,6 +14,7 @@ from train import my_collate_fn, encode_batch_labels
 
 # --- Configuration ---
 BATCH_SIZE = 32
+CONF_THRESHOLD = 0.25 # Lower threshold to improve recall for multi-label
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ROOT_DIR = os.getcwd() 
 
@@ -86,8 +87,8 @@ def evaluate_and_visualize():
             outputs = model(img, pc)
             # Sigmoid converts logits to probabilities (0-1)
             probs = torch.sigmoid(outputs)
-            # Threshold at 0.5
-            preds = (probs > 0.5).cpu().numpy().astype(int)
+            # Threshold using configured value
+            preds = (probs > CONF_THRESHOLD).cpu().numpy().astype(int)
             all_preds.append(preds)
 
     all_targets = np.vstack(all_targets)
