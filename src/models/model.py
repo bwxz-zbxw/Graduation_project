@@ -8,6 +8,10 @@ class ImageEncoder(nn.Module):
         super(ImageEncoder, self).__init__()
         # Use ResNet50 as the backbone
         # Modified to keep spatial dimensions (7x7) by removing AvgPool and FC
+        
+        # Configure weight download path
+        torch.hub.set_dir(os.path.join(os.getcwd(), 'models', 'weights'))
+        
         weights = models.ResNet50_Weights.DEFAULT
         resnet = models.resnet50(weights=weights)
         
