@@ -50,8 +50,9 @@ class PointNetEncoder(nn.Module):
         return x
 
 class SceneUnderstandingModel(nn.Module):
-    def __init__(self, num_classes=37): # 37 classes in SUNRGBD
+    def __init__(self, num_classes=37, use_transformer=True): # 37 classes in SUNRGBD
         super(SceneUnderstandingModel, self).__init__()
+        self.use_transformer = use_transformer
         
         # 1. Feature Extraction
         self.image_encoder = ImageEncoder(out_dim=2048) # Outputs (B, 2048, 7, 7)
@@ -64,8 +65,9 @@ class SceneUnderstandingModel(nn.Module):
         
         # 3. Spatial Reasoning (Transformer Encoder)
         # We treat 7x7 image regions + 1 global PC feature as a sequence of 50 tokens
-        encoder_layer = nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=8, dim_feedforward=2048, dropout=0.1, batch_first=True)
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        if self.use_transformer:
+            encoder_layer = nn.TransformerEncoderLayer(d_model=self.hidden_dim, nhead=8, dim_feedforward=2048, dropout=0.1, batch_first=True)
+            self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
         
         # 4. Result Output
         # We classify based on the mean of all tokens (Global Context)
@@ -94,13 +96,16 @@ class SceneUnderstandingModel(nn.Module):
         tokens = torch.cat([img_tokens, pc_token], dim=1)
         
         # --- 3. Spatial Reasoning (Transformer) ---
-        # Tokens interact with each other via Self-Attention
-        attended_tokens = self.transformer(tokens) # (B, 50, 512)
+        if self.use_transformer:
+            # Tokens interact with each other via Self-Attention
+            attended_tokens = self.transformer(tokens) # (B, 50, 512)
+            # Global Average Pooling over all tokens to get scene descriptor
+            scene_feat = attended_tokens.mean(dim=1) # (B, 512)
+        else:
+            # Baseline: No interaction, just Global Average Pooling directly
+            scene_feat = tokens.mean(dim=1) # (B, 512)
         
         # --- 4. Output ---
-        # Global Average Pooling over all tokens to get scene descriptor
-        scene_feat = attended_tokens.mean(dim=1) # (B, 512)
-        
         out = self.classifier(scene_feat) # (B, NumClasses)
         
         return out
