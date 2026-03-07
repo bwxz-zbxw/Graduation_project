@@ -2,6 +2,7 @@
 SUNRGBD/
 SUNRGBDtoolbox/
 文献/
+数据记录/
 *.zip
 *.tar.gz
 *.rar
