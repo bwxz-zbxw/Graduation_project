@@ -237,7 +237,8 @@ def train():
     # Use pos_weight in BCEWithLogitsLoss
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3, verbose=True)
+    # verbose argument removed for compatibility with newer PyTorch versions
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3)
     
     # 4. Training Loop
     print("Starting Training...")
