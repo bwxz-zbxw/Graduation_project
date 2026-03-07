@@ -10,11 +10,12 @@ from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_sc
 
 from src.data.sunrgbd_dataset import SUNRGBDDataset
 from src.models.model import SceneUnderstandingModel
-from train import my_collate_fn, encode_batch_labels
+# Update import: my_collate_fn removed, use val_collate_fn
+from train import val_collate_fn as my_collate_fn, encode_batch_labels
 
 # --- Configuration ---
 BATCH_SIZE = 32
-CONF_THRESHOLD = 0.25 # Lower threshold to improve recall for multi-label
+CONF_THRESHOLD = 0.5 # Increased threshold to 0.5 to balance precision and recall
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ROOT_DIR = os.getcwd() 
 
