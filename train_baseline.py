@@ -111,14 +111,49 @@ def train_baseline():
     model = SceneUnderstandingModel(num_classes=num_classes, use_transformer=False).to(DEVICE)
     
     # 3. Weights
-    weight_path = os.path.join(ROOT_DIR, 'class_weights_sqrt.pt')
+    weight_path = os.path.join(ROOT_DIR, 'class_weights.pt')
     if os.path.exists(weight_path):
         print(f"Loading class weights from {weight_path}")
         pos_weight = torch.load(weight_path).to(DEVICE)
         criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     else:
-        print("Warning: Class weights not found! Falling back to unweighted loss (Experiment might be invalid).")
-        criterion = nn.BCEWithLogitsLoss()
+        print("Warning: Class weights not found! Computing them now...")
+        # Fallback to computing weights if file is missing (e.g. fresh environment)
+        # This duplicates logic from train.py but ensures robustness
+        image_counts = {cls: 0 for cls in ALL_CLASSES}
+        total_len = len(full_dataset)
+        
+        # Quick approximation or better yet, error out to force user to run train.py first?
+        # Better: run calculation loop if missing
+        for i in tqdm(range(len(full_dataset)), desc="Counting Classes"):
+            sample = full_dataset.all_meta[full_dataset.indices[i]]
+            existing_labels = set()
+            if hasattr(sample, 'groundtruth3DBB'):
+                gts = sample.groundtruth3DBB
+                if isinstance(gts, np.ndarray) and gts.size > 0:
+                    if gts.ndim == 0: gts = np.array([gts])
+                    for gt in gts:
+                        try:
+                            if hasattr(gt, 'classname'):
+                                cls_name = str(gt.classname)
+                                if cls_name in ALL_CLASSES:
+                                    existing_labels.add(cls_name)
+                        except: pass
+            for cls in existing_labels:
+                image_counts[cls] += 1
+        
+        pos_weights = []
+        for cls in ALL_CLASSES:
+            pos = image_counts[cls]
+            if pos == 0: pos = 1 
+            neg = total_len - pos
+            weight = (neg / pos) ** 0.5 
+            pos_weights.append(weight)
+            
+        pos_weight = torch.tensor(pos_weights).float().to(DEVICE)
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        torch.save(pos_weight, weight_path)
+        print("Weights computed and saved.")
 
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3)
