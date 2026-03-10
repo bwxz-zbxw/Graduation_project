@@ -6,7 +6,7 @@ from torchvision import transforms
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, average_precision_score
 
 from src.data.sunrgbd_dataset import SUNRGBDDataset
 from src.models.model import SceneUnderstandingModel
@@ -73,6 +73,7 @@ def evaluate_and_visualize():
     # 3. Metrics Calculation
     all_preds = []
     all_targets = []
+    all_probs = [] # Collecting probabilities for mAP
     
     print("Calculating metrics on Validation Set...")
     with torch.no_grad():
@@ -88,12 +89,17 @@ def evaluate_and_visualize():
             outputs = model(img, pc)
             # Sigmoid converts logits to probabilities (0-1)
             probs = torch.sigmoid(outputs)
+            
+            # Save probabilities
+            all_probs.append(probs.cpu().numpy())
+            
             # Threshold using configured value
             preds = (probs > CONF_THRESHOLD).cpu().numpy().astype(int)
             all_preds.append(preds)
 
     all_targets = np.vstack(all_targets)
     all_preds = np.vstack(all_preds)
+    all_probs = np.vstack(all_probs)
     
     # Calculate Metrics
     # Micro: Calculate metrics globally by counting the total true positives, false negatives and false positives.
@@ -105,10 +111,18 @@ def evaluate_and_visualize():
     # Precision/Recall
     precision_micro = precision_score(all_targets, all_preds, average='micro')
     recall_micro = recall_score(all_targets, all_preds, average='micro')
+    
+    # Calculate mAP
+    try:
+        mAP = average_precision_score(all_targets, all_probs, average='macro')
+    except ValueError:
+        mAP = 0.0
+        print("Warning: mAP calculation failed (possibly due to empty targets)")
 
     print("\n" + "="*30)
     print("       EVALUATION RESULTS       ")
     print("="*30)
+    print(f"mAP (Mean Avg Precision):{mAP:.4f} (Ranking Quality)")
     print(f"F1 Score (Micro):    {f1_micro:.4f} (Weighted importance)")
     print(f"F1 Score (Macro):    {f1_macro:.4f} (Average across classes)")
     print(f"Precision (Micro):   {precision_micro:.4f}")
