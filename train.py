@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, hamming_loss
 
 from src.data.sunrgbd_dataset import SUNRGBDDataset
 from src.models.model import SceneUnderstandingModel
@@ -118,7 +118,8 @@ def validate(model, loader, criterion, class_to_idx, device):
     macro_f1 = f1_score(all_targets, all_preds, average='macro')
     precision = precision_score(all_targets, all_preds, average='micro', zero_division=0)
     recall = recall_score(all_targets, all_preds, average='micro', zero_division=0)
-    
+    h_loss = hamming_loss(all_targets, all_preds)
+
     avg_loss = total_loss / len(loader)
     
     return {
@@ -126,7 +127,8 @@ def validate(model, loader, criterion, class_to_idx, device):
         'micro_f1': micro_f1,
         'macro_f1': macro_f1,
         'precision': precision,
-        'recall': recall
+        'recall': recall,
+        'h_loss': h_loss
     }
 
 def encode_batch_labels(label_list_batch, class_to_idx):
@@ -278,6 +280,7 @@ def train():
         print(f"  Micro F1: {val_metrics['micro_f1']:.4f}")
         print(f"  Precision: {val_metrics['precision']:.4f}")
         print(f"  Recall: {val_metrics['recall']:.4f}")
+        print(f"  Hamming Loss: {val_metrics['h_loss']:.4f}")
         
         # Step Scheduler based on Macro F1 (maximizing it)
         scheduler.step(val_macro_f1)

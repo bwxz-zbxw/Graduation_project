@@ -6,7 +6,7 @@ from torchvision import transforms
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, average_precision_score
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, average_precision_score, hamming_loss
 
 from src.data.sunrgbd_dataset import SUNRGBDDataset
 from src.models.model import SceneUnderstandingModel
@@ -107,6 +107,7 @@ def evaluate_and_visualize():
     f1_micro = f1_score(all_targets, all_preds, average='micro')
     f1_macro = f1_score(all_targets, all_preds, average='macro')
     acc_subset = accuracy_score(all_targets, all_preds) # Exact match ratio (harsh metric)
+    h_loss = hamming_loss(all_targets, all_preds) # Fraction of labels that are incorrectly predicted
     
     # Precision/Recall
     precision_micro = precision_score(all_targets, all_preds, average='micro')
@@ -128,6 +129,8 @@ def evaluate_and_visualize():
     print(f"Precision (Micro):   {precision_micro:.4f}")
     print(f"Recall (Micro):      {recall_micro:.4f}")
     print(f"Subset Accuracy:     {acc_subset:.4f} (All labels must match exactly)")
+    print(f"Hamming Loss:        {h_loss:.4f} (Lower is better)")
+    
     print("="*30 + "\n")
 
     # 4. Visualization (Save to file)
