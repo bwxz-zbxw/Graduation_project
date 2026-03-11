@@ -26,6 +26,8 @@ def denormalize(img_tensor):
     img = np.clip(img, 0, 1)
     return img
 
+import types
+
 # --- Hook mechanism to capture attention weights ---
 attention_weights = []
 
@@ -33,7 +35,20 @@ def attention_hook(module, input, output):
     # output is (attn_output, attn_weights)
     # attn_weights shape: (Batch, TargetLen, SourceLen) = (B, 50, 50)
     # We detach and move to CPU to save memory
-    attention_weights.append(output[1].detach().cpu())
+    if output[1] is not None:
+        attention_weights.append(output[1].detach().cpu())
+    else:
+        print("Warning: Attention weights are None. Hook failed to capture.")
+
+# --- Monkey Patch function for TransformerEncoderLayer ---
+# This forces need_weights=True during inference
+def custom_sa_block(self, x, attn_mask, key_padding_mask, is_causal=False):
+    x, weights = self.self_attn(x, x, x,
+        attn_mask=attn_mask,
+        key_padding_mask=key_padding_mask,
+        need_weights=True, # FORCE TRUE here
+        is_causal=is_causal)
+    return self.dropout1(x)
 
 def visualize_attention():
     print(f"Using device: {DEVICE}")
@@ -68,6 +83,13 @@ def visualize_attention():
 
     model.eval()
 
+    # 2.5. Monkey Patch _sa_block to force need_weights=True
+    # PyTorch's default TransformerEncoderLayer calls self_attn with need_weights=False for efficiency
+    # We override it to return weights so our hook can capture them.
+    for layer in model.transformer.layers:
+        # Bind the custom method to the instance
+        layer._sa_block = types.MethodType(custom_sa_block, layer)
+    
     # 3. Register Hook on the LAST Transformer Layer
     # Structure: model.transformer.layers (ModuleList) -> TransformerEncoderLayer -> self_attn (MultiheadAttention)
     # specific layer index: -1 (last layer)
