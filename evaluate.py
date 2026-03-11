@@ -123,13 +123,13 @@ def evaluate_and_visualize():
     print("\n" + "="*30)
     print("       EVALUATION RESULTS       ")
     print("="*30)
-    print(f"mAP (Mean Avg Precision):{mAP:.4f} (Ranking Quality)")
-    print(f"F1 Score (Micro):    {f1_micro:.4f} (Weighted importance)")
-    print(f"F1 Score (Macro):    {f1_macro:.4f} (Average across classes)")
+    print(f"mAP (Mean Avg Precision):{mAP:.4f} ")
+    print(f"F1 Score (Micro):    {f1_micro:.4f} ")
+    print(f"F1 Score (Macro):    {f1_macro:.4f} ")
     print(f"Precision (Micro):   {precision_micro:.4f}")
     print(f"Recall (Micro):      {recall_micro:.4f}")
-    print(f"Subset Accuracy:     {acc_subset:.4f} (All labels must match exactly)")
-    print(f"Hamming Loss:        {h_loss:.4f} (Lower is better)")
+    print(f"Subset Accuracy:     {acc_subset:.4f} ")
+    print(f"Hamming Loss:        {h_loss:.4f} ")
     
     print("="*30 + "\n")
 
